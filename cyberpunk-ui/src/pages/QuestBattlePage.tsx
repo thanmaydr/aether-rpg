@@ -7,7 +7,7 @@ import LevelUpModal from '@/components/Animations/LevelUpModal'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2, Send, BookOpen, ChevronLeft, Brain, Shield, Trophy, Mic, MicOff, Lightbulb } from 'lucide-react'
+import { Loader2, Send, BookOpen, ChevronLeft, Brain, Shield, Trophy, Mic, MicOff, Lightbulb, Volume2 } from 'lucide-react'
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition'
 import { toast } from 'sonner'
 
@@ -53,7 +53,7 @@ export default function QuestBattlePage() {
     const scrollRef = useRef<HTMLDivElement>(null)
     const hasGreeting = useRef(false)
 
-    const { isListening, transcript, startListening, stopListening, hasRecognitionSupport } = useSpeechRecognition()
+    const { isListening, transcript, startListening, stopListening, hasRecognitionSupport, resetTranscript } = useSpeechRecognition()
 
     // Sync transcript to input
     useEffect(() => {
@@ -148,6 +148,7 @@ export default function QuestBattlePage() {
         const userMsg: Message = { role: 'user', content: input }
         setMessages(prev => [...prev, userMsg])
         setInput('')
+        resetTranscript() // Reset transcript after sending
         setIsThinking(true)
 
         try {
@@ -238,6 +239,18 @@ export default function QuestBattlePage() {
             toast.error('Failed to retrieve hint.')
         } finally {
             setRequestingHint(false)
+        }
+    }
+
+    const handleSpeak = (text: string) => {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text)
+            // Optional: Select a specific voice if desired
+            // const voices = window.speechSynthesis.getVoices()
+            // utterance.voice = voices.find(voice => voice.name.includes('Google US English')) || null
+            window.speechSynthesis.speak(utterance)
+        } else {
+            toast.error('Text-to-Speech not supported in this browser.')
         }
     }
 
@@ -340,13 +353,25 @@ export default function QuestBattlePage() {
                             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
                             <div className={`
-                                max-w-[85%] md:max-w-[75%] rounded-lg p-4 font-mono text-sm leading-relaxed shadow-lg
+                                max-w-[85%] md:max-w-[75%] rounded-lg p-4 font-mono text-sm leading-relaxed shadow-lg relative group
                                 ${msg.role === 'user'
                                     ? 'bg-cyan-950/40 text-cyan-100 border border-cyan-500/30 rounded-tr-none'
                                     : 'bg-slate-900 text-slate-300 border border-slate-800 rounded-tl-none'
                                 }
                             `}>
                                 <div className="whitespace-pre-wrap">{msg.content}</div>
+
+                                {msg.role === 'assistant' && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute -right-10 top-0 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 hover:text-cyan-400"
+                                        onClick={() => handleSpeak(msg.content)}
+                                        title="Read Aloud"
+                                    >
+                                        <Volume2 className="w-4 h-4" />
+                                    </Button>
+                                )}
 
                                 {msg.metrics && (
                                     <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-3 gap-2 text-xs">
