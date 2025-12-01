@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
 import confetti from 'canvas-confetti'
 import { Button } from '@/components/ui/button'
-import { Zap } from 'lucide-react'
+import { Zap, Share2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface LevelUpModalProps {
     newLevel: number
@@ -36,7 +37,20 @@ export default function LevelUpModal({ newLevel, onClose }: LevelUpModalProps) {
         }
 
         frame()
+        frame()
     }, [])
+
+    const handleShare = () => {
+        const text = `I just reached Level ${newLevel} in Aether RPG! 🚀\n\nMastering knowledge through the Feynman Technique.\n\n#AetherRPG #Learning`
+
+        // Try to open Twitter/X intent
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`
+        window.open(twitterUrl, '_blank')
+
+        // Also copy to clipboard
+        navigator.clipboard.writeText(text)
+        toast.success('Achievement copied to clipboard!')
+    }
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-300">
@@ -67,6 +81,17 @@ export default function LevelUpModal({ newLevel, onClose }: LevelUpModalProps) {
                         onClick={onClose}
                     >
                         ACKNOWLEDGE_UPGRADE
+                    </Button>
+                </div>
+
+                <div className="relative z-10">
+                    <Button
+                        variant="ghost"
+                        className="text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/30 gap-2"
+                        onClick={handleShare}
+                    >
+                        <Share2 className="w-4 h-4" />
+                        SHARE_ACHIEVEMENT
                     </Button>
                 </div>
             </div>

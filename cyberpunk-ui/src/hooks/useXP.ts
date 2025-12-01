@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 
@@ -13,7 +13,7 @@ export const useXP = () => {
         return Math.pow(level + 1, 2) * 100
     }
 
-    const addXP = async (userId: string, currentXp: number, amount: number) => {
+    const addXP = useCallback(async (userId: string, currentXp: number, amount: number) => {
         if (!supabase) return null
 
         try {
@@ -47,10 +47,10 @@ export const useXP = () => {
         } finally {
             setLoading(false)
         }
-    }
+    }, [])
 
-    const checkStreak = async (userId: string) => {
-        if (!supabase) return
+    const checkStreak = useCallback(async (userId: string) => {
+        if (!supabase) return 0
 
         try {
             const { data: profile, error } = await supabase
@@ -65,7 +65,7 @@ export const useXP = () => {
             const now = new Date()
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
-            let newStreak = profile.streak_count
+            let newStreak = profile.streak_count || 0
             let shouldUpdate = false
 
             if (lastActive) {
@@ -82,7 +82,7 @@ export const useXP = () => {
                     newStreak = 1
                     shouldUpdate = true
                 } else {
-                    // Already active today, no streak change and no need to update time constantly
+                    // Already active today
                     shouldUpdate = false
                 }
             } else {
@@ -107,7 +107,7 @@ export const useXP = () => {
             console.error('Error checking streak:', error)
             return 0
         }
-    }
+    }, [])
 
     return {
         calculateLevel,

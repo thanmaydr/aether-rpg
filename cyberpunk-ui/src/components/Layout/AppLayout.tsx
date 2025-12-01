@@ -9,7 +9,9 @@ import {
     LogOut,
     Menu,
     X,
-    ChevronRight
+    ChevronRight,
+    Users,
+    FileText
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -29,8 +31,10 @@ export default function AppLayout() {
     const navItems = [
         { name: 'NEXUS', path: '/dashboard', icon: Home },
         { name: 'QUESTS', path: '/quests', icon: Swords },
+        { name: 'SQUADS', path: '/squads', icon: Users },
         { name: 'ARCHIVES', path: '/archives', icon: BookOpen },
         { name: 'PROFILE', path: '/profile', icon: User },
+        { name: 'GENERATOR', path: '/generator', icon: FileText },
     ]
 
     const handleSignOut = async () => {

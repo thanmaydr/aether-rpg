@@ -67,14 +67,35 @@ export default function NeuralMapPage() {
             const progressMap = new Map(userProgress?.map(p => [p.node_id, p.status]) || [])
             const questMap = new Map(quests?.map(q => [q.node_id, q.id]) || [])
 
-            const graphNodes: GraphNode[] = (knowledgeNodes || []).map(node => ({
-                id: node.id,
-                title: node.title,
-                status: (progressMap.get(node.id) as 'locked' | 'corrupted' | 'restored') || 'locked',
-                domain: node.domain,
-                difficulty_tier: node.difficulty_tier,
-                quest_id: questMap.get(node.id)
-            }))
+            const graphNodes: GraphNode[] = (knowledgeNodes || []).map(node => {
+                let status = (progressMap.get(node.id) as 'locked' | 'corrupted' | 'restored')
+
+                if (!status) {
+                    // Default logic for nodes without progress
+                    if (node.difficulty_tier === 1) {
+                        status = 'corrupted' // Tier 1 is always available
+                    } else if (node.parent_node_id) {
+                        // Check if parent is restored
+                        const parentStatus = progressMap.get(node.parent_node_id)
+                        if (parentStatus === 'restored') {
+                            status = 'corrupted' // Unlock if parent is restored
+                        } else {
+                            status = 'locked'
+                        }
+                    } else {
+                        status = 'locked'
+                    }
+                }
+
+                return {
+                    id: node.id,
+                    title: node.title,
+                    status,
+                    domain: node.domain,
+                    difficulty_tier: node.difficulty_tier,
+                    quest_id: questMap.get(node.id)
+                }
+            })
 
             const graphLinks: GraphLink[] = (knowledgeNodes || [])
                 .filter(node => node.parent_node_id)

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, memo } from 'react'
 import ForceGraph2D from 'react-force-graph-2d'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -27,7 +27,7 @@ interface ForceGraphCanvasProps {
     onNodeClick: (nodeId: string) => void
 }
 
-export default function ForceGraphCanvas({ nodes, links, onNodeClick }: ForceGraphCanvasProps) {
+const ForceGraphCanvas = memo(function ForceGraphCanvas({ nodes, links, onNodeClick }: ForceGraphCanvasProps) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fgRef = useRef<any>(null)
     const [selectedNode, setSelectedNode] = useState<Node | null>(null)
@@ -106,28 +106,32 @@ export default function ForceGraphCanvas({ nodes, links, onNodeClick }: ForceGra
                 linkWidth={2}
                 enableNodeDrag={false}
                 dagMode={isMobile ? undefined : "td"}
-                dagLevelDistance={isMobile ? 60 : 100}
+                dagLevelDistance={isMobile ? 80 : 150} // Increased spacing
+                d3VelocityDecay={0.3} // Stabilize faster
+                cooldownTicks={100}
+                onEngineStop={() => fgRef.current?.zoomToFit(400)}
                 onNodeClick={(node: Node) => handleNodeClick(node)}
                 linkDirectionalParticles={isMobile ? 1 : 2}
                 linkDirectionalParticleSpeed={0.005}
                 linkDirectionalParticleWidth={2}
                 linkDirectionalParticleColor={() => '#38bdf8'} // sky-400
+                d3AlphaDecay={0.02} // Slower decay for better settlement
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 nodeCanvasObject={(node: any, ctx, globalScale) => {
                     const n = node as Node
                     const label = n.title
                     const fontSize = (isMobile ? 14 : 12) / globalScale
-                    const radius = Math.max(4, (n.difficulty_tier || 1) * 3)
+                    const radius = Math.max(6, (n.difficulty_tier || 1) * 4) // Slightly larger nodes
                     const color = getNodeColor(n.status)
                     const isSelected = n === selectedNode
 
                     // Glow Effect
-                    const glowColor = n.status === 'restored' ? 'rgba(34, 211, 238, 0.5)' :
-                        n.status === 'corrupted' ? 'rgba(239, 68, 68, 0.5)' :
-                            'rgba(71, 85, 105, 0.3)'
+                    const glowColor = n.status === 'restored' ? 'rgba(34, 211, 238, 0.6)' :
+                        n.status === 'corrupted' ? 'rgba(239, 68, 68, 0.6)' :
+                            'rgba(71, 85, 105, 0.4)'
 
                     ctx.shadowColor = glowColor
-                    ctx.shadowBlur = isSelected ? 20 : 10
+                    ctx.shadowBlur = isSelected ? 30 : 15
                     ctx.shadowOffsetX = 0
                     ctx.shadowOffsetY = 0
 
@@ -136,8 +140,8 @@ export default function ForceGraphCanvas({ nodes, links, onNodeClick }: ForceGra
                         const time = Date.now()
                         const pulse = (Math.sin(time / 200) + 1) / 2 // 0 to 1
                         ctx.beginPath()
-                        ctx.arc(n.x!, n.y!, radius + (pulse * 5), 0, 2 * Math.PI, false)
-                        ctx.fillStyle = `rgba(239, 68, 68, ${0.2 - (pulse * 0.1)})`
+                        ctx.arc(n.x!, n.y!, radius + (pulse * 6), 0, 2 * Math.PI, false)
+                        ctx.fillStyle = `rgba(239, 68, 68, ${0.15 - (pulse * 0.05)})`
                         ctx.fill()
                     }
 
@@ -147,50 +151,63 @@ export default function ForceGraphCanvas({ nodes, links, onNodeClick }: ForceGra
                     ctx.fillStyle = color
                     ctx.fill()
 
+                    // Inner Ring for Restored
+                    if (n.status === 'restored') {
+                        ctx.beginPath()
+                        ctx.arc(n.x!, n.y!, radius * 0.6, 0, 2 * Math.PI, false)
+                        ctx.fillStyle = '#083344' // cyan-950
+                        ctx.fill()
+
+                        ctx.beginPath()
+                        ctx.arc(n.x!, n.y!, radius * 0.3, 0, 2 * Math.PI, false)
+                        ctx.fillStyle = '#22d3ee' // cyan-400
+                        ctx.fill()
+                    }
+
                     // Reset Shadow for Border
                     ctx.shadowBlur = 0
 
                     // Draw Border
                     ctx.strokeStyle = isSelected ? '#fff' : '#0f172a'
-                    ctx.lineWidth = (isSelected ? 2 : 1) / globalScale
+                    ctx.lineWidth = (isSelected ? 3 : 1.5) / globalScale
                     ctx.stroke()
 
                     // Draw Label (Only if selected or zoomed in enough)
-                    if (isSelected || globalScale > 1.5) {
+                    if (isSelected || globalScale > 1.2) {
                         const textWidth = ctx.measureText(label).width
-                        const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.4)
+                        const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.6)
 
-                        ctx.font = `${fontSize}px 'JetBrains Mono', monospace`
+                        ctx.font = `bold ${fontSize}px 'JetBrains Mono', monospace`
                         ctx.textAlign = 'center'
                         ctx.textBaseline = 'middle'
 
                         // Glassmorphism Label Background
-                        ctx.fillStyle = 'rgba(2, 6, 23, 0.7)'
+                        ctx.fillStyle = 'rgba(2, 6, 23, 0.85)'
                         ctx.roundRect(
                             n.x! - bckgDimensions[0] / 2,
-                            n.y! + radius + 4,
+                            n.y! + radius + 6,
                             bckgDimensions[0],
                             bckgDimensions[1],
-                            4 / globalScale
+                            6 / globalScale
                         )
                         ctx.fill()
 
                         // Border for label
-                        ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)'
+                        ctx.strokeStyle = n.status === 'restored' ? 'rgba(34, 211, 238, 0.3)' : 'rgba(148, 163, 184, 0.3)'
                         ctx.lineWidth = 1 / globalScale
                         ctx.stroke()
 
                         // Label Text
-                        ctx.fillStyle = n.status === 'restored' ? '#22d3ee' : n.status === 'corrupted' ? '#ef4444' : '#e2e8f0'
-                        ctx.fillText(label, n.x!, n.y! + radius + fontSize / 2 + 4)
+                        ctx.fillStyle = n.status === 'restored' ? '#22d3ee' : n.status === 'corrupted' ? '#fca5a5' : '#e2e8f0'
+                        ctx.fillText(label, n.x!, n.y! + radius + fontSize / 2 + 6)
                     }
                 }}
             />
 
             {/* Controls */}
             <div className={`absolute flex gap-2 pointer-events-auto transition-all duration-300 ${isMobile
-                    ? 'bottom-24 right-4 flex-col'
-                    : 'bottom-4 right-4 flex-row'
+                ? 'bottom-24 right-4 flex-col'
+                : 'bottom-4 right-4 flex-row'
                 }`}>
                 <Button variant="outline" size="icon" onClick={handleZoomIn} className="bg-black/50 border-cyan-500/30 text-cyan-400 hover:bg-cyan-950/50 h-10 w-10 md:h-9 md:w-9">
                     <ZoomIn className="w-5 h-5 md:w-4 md:h-4" />
@@ -206,8 +223,8 @@ export default function ForceGraphCanvas({ nodes, links, onNodeClick }: ForceGra
             {/* Node Details Modal/Tooltip */}
             {selectedNode && (
                 <div className={`absolute pointer-events-auto transition-all duration-300 z-20 ${isMobile
-                        ? 'bottom-0 left-0 right-0 animate-in slide-in-from-bottom-full'
-                        : 'top-4 left-4 w-80 animate-in slide-in-from-left-4'
+                    ? 'bottom-0 left-0 right-0 animate-in slide-in-from-bottom-full'
+                    : 'top-4 left-4 w-80 animate-in slide-in-from-left-4'
                     }`}>
                     <Card className={`glass border-${selectedNode.status === 'corrupted' ? 'red' : selectedNode.status === 'restored' ? 'cyan' : 'slate'}-500/30 ${isMobile ? 'rounded-b-none border-b-0 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]' : ''
                         }`}>
@@ -268,4 +285,6 @@ export default function ForceGraphCanvas({ nodes, links, onNodeClick }: ForceGra
             )}
         </div>
     )
-}
+})
+
+export default ForceGraphCanvas

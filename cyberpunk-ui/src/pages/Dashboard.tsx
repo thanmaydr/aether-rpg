@@ -115,7 +115,7 @@ export default function Dashboard() {
         }
 
         fetchDashboardData()
-    }, [user, checkStreak])
+    }, [user?.id, checkStreak])
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const StatCard = ({ icon: Icon, label, value, color }: any) => (

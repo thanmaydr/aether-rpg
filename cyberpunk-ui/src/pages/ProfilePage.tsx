@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, Suspense, lazy } from 'react'
+import { useEffect, useState, useRef, lazy, Suspense } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -21,19 +21,15 @@ import {
     Bell,
     Moon,
     BookOpen,
-    AlertTriangle
+    AlertTriangle,
+    Globe,
+    Lock
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { Spinner } from '@/components/ui/Spinner'
 
-// Lazy load Recharts components
-const ResponsiveContainer = lazy(() => import('recharts').then(module => ({ default: module.ResponsiveContainer })))
-const BarChart = lazy(() => import('recharts').then(module => ({ default: module.BarChart })))
-const Bar = lazy(() => import('recharts').then(module => ({ default: module.Bar })))
-const XAxis = lazy(() => import('recharts').then(module => ({ default: module.XAxis })))
-const YAxis = lazy(() => import('recharts').then(module => ({ default: module.YAxis })))
-const CartesianGrid = lazy(() => import('recharts').then(module => ({ default: module.CartesianGrid })))
-const Tooltip = lazy(() => import('recharts').then(module => ({ default: module.Tooltip })))
-const Cell = lazy(() => import('recharts').then(module => ({ default: module.Cell })))
+// Lazy load Recharts component
+const XPChart = lazy(() => import('@/components/Profile/XPChart'))
 
 interface ProfileData {
     username: string
@@ -42,6 +38,7 @@ interface ProfileData {
     level: number
     character_class: string
     created_at: string
+    is_public: boolean
 }
 
 interface UserStats {
@@ -141,7 +138,7 @@ export default function ProfilePage() {
         }
 
         fetchProfile()
-    }, [user])
+    }, [user?.id])
 
     const handleUpdateProfile = async () => {
         if (!user || !supabase) return
@@ -160,6 +157,26 @@ export default function ProfilePage() {
         } catch (error) {
             console.error('Error updating profile:', error)
             toast.error('Failed to update profile')
+        }
+    }
+
+    const handleTogglePublic = async () => {
+        if (!user || !supabase || !profile) return
+
+        try {
+            const newStatus = !profile.is_public
+            const { error } = await supabase
+                .from('profiles')
+                .update({ is_public: newStatus })
+                .eq('id', user.id)
+
+            if (error) throw error
+
+            setProfile(prev => prev ? { ...prev, is_public: newStatus } : null)
+            toast.success(newStatus ? 'Profile is now public' : 'Profile is now private')
+        } catch (error) {
+            console.error('Error updating visibility:', error)
+            toast.error('Failed to update visibility')
         }
     }
 
@@ -376,24 +393,12 @@ export default function ProfilePage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="h-[300px]">
-                            <Suspense fallback={<div className="h-full w-full flex items-center justify-center text-cyan-500/50 font-mono">LOADING_CHART_DATA...</div>}>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={chartData}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                                        <XAxis dataKey="name" stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                                        <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
-                                        <Tooltip
-                                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }}
-                                            itemStyle={{ color: '#c084fc' }}
-                                            cursor={{ fill: '#1e293b' }}
-                                        />
-                                        <Bar dataKey="userXp" name="Your XP" fill="#c084fc" radius={[4, 4, 0, 0]}>
-                                            {chartData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.userXp > 0 ? '#c084fc' : '#334155'} />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
+                            <Suspense fallback={
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <Spinner size="lg" variant="cyan" />
+                                </div>
+                            }>
+                                <XPChart data={chartData} />
                             </Suspense>
                         </CardContent>
                     </Card>
@@ -439,6 +444,28 @@ export default function ProfilePage() {
                         <TabsContent value="settings" className="mt-4 space-y-4">
                             <Card className="glass border-slate-700/50">
                                 <CardContent className="p-6 space-y-6">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded ${profile?.is_public ? 'bg-green-500/10 text-green-400' : 'bg-slate-800 text-slate-400'}`}>
+                                                {profile?.is_public ? <Globe className="w-5 h-5" /> : <Lock className="w-5 h-5" />}
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-slate-200 font-mono">PROFILE_VISIBILITY</div>
+                                                <div className="text-xs text-slate-500 font-mono">
+                                                    {profile?.is_public ? 'Visible on Global Leaderboard' : 'Hidden from public view'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className={`border-slate-700 ${profile?.is_public ? 'text-green-400 border-green-900/50 bg-green-950/20' : 'text-slate-400'}`}
+                                            onClick={handleTogglePublic}
+                                        >
+                                            {profile?.is_public ? 'PUBLIC' : 'PRIVATE'}
+                                        </Button>
+                                    </div>
+
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <div className="p-2 rounded bg-purple-500/10 text-purple-400">
