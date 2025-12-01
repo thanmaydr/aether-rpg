@@ -1,19 +1,26 @@
 -- Fix Registration Issue
 
 -- 1. Ensure profiles table exists with all necessary columns
+-- 1. Ensure profiles table exists
 CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  username TEXT,
-  full_name TEXT,
-  avatar_url TEXT,
-  website TEXT,
-  level INTEGER DEFAULT 1,
-  xp_total INTEGER DEFAULT 0,
-  character_class TEXT DEFAULT 'Novice',
-  is_public BOOLEAN DEFAULT FALSE,
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE
 );
+
+-- 2. Add columns if they don't exist (Idempotent)
+DO $$
+BEGIN
+    ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS username TEXT;
+    ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
+    ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+    ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS website TEXT;
+    ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS level INTEGER DEFAULT 1;
+    ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS xp_total INTEGER DEFAULT 0;
+    ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS character_class TEXT DEFAULT 'Novice';
+    ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS is_public BOOLEAN DEFAULT FALSE;
+    ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+    ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+END
+$$;
 
 -- 2. Enable RLS on profiles if not already enabled
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
