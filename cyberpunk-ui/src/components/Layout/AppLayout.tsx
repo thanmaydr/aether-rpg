@@ -29,11 +29,11 @@ export default function AppLayout() {
     const level = 5
 
     const navItems = [
-        { name: 'NEXUS', path: '/dashboard', icon: Home },
-        { name: 'QUESTS', path: '/quests', icon: Swords },
+        { name: 'NEXUS', path: '/dashboard', icon: Home, id: 'neural-map-link' },
+        { name: 'QUESTS', path: '/quests', icon: Swords, id: 'quests-link' },
         { name: 'SQUADS', path: '/squads', icon: Users },
         { name: 'ARCHIVES', path: '/archives', icon: BookOpen },
-        { name: 'PROFILE', path: '/profile', icon: User },
+        { name: 'PROFILE', path: '/profile', icon: User, id: 'profile-link' },
         { name: 'GENERATOR', path: '/generator', icon: FileText },
     ]
 
@@ -73,6 +73,7 @@ export default function AppLayout() {
                             <NavLink
                                 key={item.path}
                                 to={item.path}
+                                id={item.id}
                                 className={({ isActive }) => cn(
                                     "flex items-center gap-4 px-4 py-3.5 rounded-lg transition-all duration-200 group relative overflow-hidden min-h-[48px]", // Min height 48px for touch
                                     isActive
@@ -93,7 +94,7 @@ export default function AppLayout() {
                     </nav>
 
                     {/* User Info Footer */}
-                    <div className="p-4 border-t border-cyan-500/20 bg-black/20">
+                    <div className="p-4 border-t border-cyan-500/20 bg-black/20" id="user-menu">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-10 h-10 rounded bg-gradient-to-br from-cyan-500 to-magenta-600 flex items-center justify-center text-white font-mono font-bold text-sm shadow-lg">
                                 LV{level}

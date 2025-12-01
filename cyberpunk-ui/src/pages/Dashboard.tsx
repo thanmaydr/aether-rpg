@@ -17,6 +17,7 @@ import {
     Clock,
     Flame
 } from 'lucide-react'
+import WelcomeModal from '@/components/Onboarding/WelcomeModal'
 
 interface DashboardStats {
     xpTotal: number
@@ -138,6 +139,7 @@ export default function Dashboard() {
 
     return (
         <div className="space-y-8 pb-8">
+            <WelcomeModal />
             {/* Hero Section */}
             <div className="space-y-2">
                 <h1 className="text-3xl md:text-4xl font-bold font-mono text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-magenta-500">
