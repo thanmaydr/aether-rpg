@@ -1,10 +1,8 @@
-services:
-  - type: web
-    name: aether-cognitive-rpg
-    env: static
+staticSites:
+  - name: aether-cognitive-rpg
     root: cyberpunk-ui
     buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
+    publishPath: dist
     envVars:
       - key: VITE_SUPABASE_URL
         sync: false
@@ -12,7 +10,11 @@ services:
         sync: false
       - key: GROQ_API_KEY
         sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
     headers:
       - path: /*
         name: Cache-Control
-        value: public, max-age=3600
+        value: public, max-age=0, must-revalidate
