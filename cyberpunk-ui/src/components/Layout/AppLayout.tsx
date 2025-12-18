@@ -11,7 +11,9 @@ import {
     X,
     ChevronRight,
     Users,
-    FileText
+    FileText,
+    Puzzle,
+    Trophy
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -35,6 +37,8 @@ export default function AppLayout() {
         { name: 'ARCHIVES', path: '/archives', icon: BookOpen },
         { name: 'PROFILE', path: '/profile', icon: User, id: 'profile-link' },
         { name: 'GENERATOR', path: '/generator', icon: FileText },
+        { name: 'PUZZLES', path: '/puzzles', icon: Puzzle },
+        { name: 'LEADERBOARD', path: '/leaderboard', icon: Trophy },
     ]
 
     const handleSignOut = async () => {

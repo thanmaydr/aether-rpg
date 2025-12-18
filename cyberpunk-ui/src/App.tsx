@@ -20,6 +20,7 @@ const PublicProfilePage = lazy(() => import('@/pages/PublicProfilePage'))
 const SquadsPage = lazy(() => import('@/pages/SquadsPage'))
 const SquadDetailPage = lazy(() => import('@/pages/SquadDetailPage'))
 const ContentGeneratorPage = lazy(() => import('@/pages/ContentGeneratorPage'))
+const PuzzlesPage = lazy(() => import('@/pages/PuzzlesPage'))
 
 function App() {
   return (
@@ -49,6 +50,7 @@ function App() {
                 <Route path="/squads" element={<SquadsPage />} />
                 <Route path="/squads/:squadId" element={<SquadDetailPage />} />
                 <Route path="/generator" element={<ContentGeneratorPage />} />
+                <Route path="/puzzles" element={<PuzzlesPage />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/dashboard" replace />} />

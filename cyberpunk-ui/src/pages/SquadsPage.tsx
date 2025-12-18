@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Users, Plus, Shield, Trophy, Search, Loader2 } from 'lucide-react'
+import { Users, Plus, Shield, Trophy, Search, Loader2, Mail, Check, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { useNavigate } from 'react-router-dom'
 
@@ -29,11 +29,71 @@ export default function SquadsPage() {
     const [newSquadName, setNewSquadName] = useState('')
     const [newSquadDesc, setNewSquadDesc] = useState('')
     const [userSquadId, setUserSquadId] = useState<string | null>(null)
+    const [inviteSearchTerm, setInviteSearchTerm] = useState('')
+    const [searchResults, setSearchResults] = useState<any[]>([])
+    const [selectedUsers, setSelectedUsers] = useState<any[]>([])
+    const [isSearching, setIsSearching] = useState(false)
+    const [pendingInvites, setPendingInvites] = useState<any[]>([])
 
     useEffect(() => {
         fetchSquads()
         checkUserSquad()
+        fetchPendingInvites()
     }, [user])
+
+    const fetchPendingInvites = async () => {
+        if (!user || !supabase) return
+        const { data, error } = await supabase
+            .from('squad_invites')
+            .select(`
+                id,
+                status,
+                squad:squads (
+                    id,
+                    name,
+                    squad_xp
+                ),
+                inviter:profiles!invited_by (
+                    username,
+                    avatar_url
+                )
+            `)
+            .eq('invited_user_id', user.id)
+            .eq('status', 'pending')
+
+        if (error) {
+            console.error('Error fetching invites:', error)
+        } else {
+            setPendingInvites(data || [])
+        }
+    }
+
+    const handleAcceptInvite = async (inviteId: string) => {
+        if (!supabase) return
+        try {
+            const { error } = await supabase.rpc('accept_squad_invite', { invite_id: inviteId })
+            if (error) throw error
+            toast.success('Welcome to the squad!')
+            setPendingInvites(prev => prev.filter(i => i.id !== inviteId))
+            checkUserSquad() // Refresh user squad status
+        } catch (error: any) {
+            console.error('Error accepting invite:', error)
+            toast.error(error.message || 'Failed to accept invite')
+        }
+    }
+
+    const handleRejectInvite = async (inviteId: string) => {
+        if (!supabase) return
+        try {
+            const { error } = await supabase.rpc('reject_squad_invite', { invite_id: inviteId })
+            if (error) throw error
+            toast.info('Invite rejected')
+            setPendingInvites(prev => prev.filter(i => i.id !== inviteId))
+        } catch (error: any) {
+            console.error('Error rejecting invite:', error)
+            toast.error('Failed to reject invite')
+        }
+    }
 
     const fetchSquads = async () => {
         if (!supabase) return
@@ -65,6 +125,62 @@ export default function SquadsPage() {
         if (data) setUserSquadId(data.squad_id)
     }
 
+    const handleUserSearch = async (term: string) => {
+        setInviteSearchTerm(term)
+        if (!term.trim() || term.length < 2) {
+            setSearchResults([])
+            return
+        }
+
+        setIsSearching(true)
+        try {
+            const { data, error } = await supabase!
+                .from('profiles')
+                .select('id, username, avatar_url, level, character_class')
+                .ilike('username', `%${term}%`)
+                .eq('is_public', true)
+                .neq('id', user!.id)
+                .limit(5)
+
+            if (error) throw error
+            setSearchResults(data || [])
+        } catch (error) {
+            console.error('Error searching users:', error)
+        } finally {
+            setIsSearching(false)
+        }
+    }
+
+    const toggleUserSelection = (user: any) => {
+        if (selectedUsers.some(u => u.id === user.id)) {
+            setSelectedUsers(prev => prev.filter(u => u.id !== user.id))
+        } else {
+            setSelectedUsers(prev => [...prev, user])
+        }
+    }
+
+    const createInvites = async (squadId: string) => {
+        if (!selectedUsers.length) return
+
+        const invites = selectedUsers.map(u => ({
+            squad_id: squadId,
+            invited_user_id: u.id,
+            invited_by: user!.id,
+            status: 'pending'
+        }))
+
+        const { error } = await supabase!
+            .from('squad_invites')
+            .insert(invites)
+
+        if (error) {
+            console.error('Error sending invites:', error)
+            toast.error('Squad created, but failed to send some invites.')
+        } else {
+            toast.success(`Squad created and ${invites.length} invites sent!`)
+        }
+    }
+
     const handleCreateSquad = async () => {
         if (!newSquadName.trim() || !supabase) return
         setIsCreating(true)
@@ -80,6 +196,7 @@ export default function SquadsPage() {
             setNewSquadName('')
             setNewSquadDesc('')
             if (data) {
+                await createInvites(data)
                 navigate(`/squads/${data}`)
             } else {
                 fetchSquads()
@@ -186,6 +303,61 @@ export default function SquadsPage() {
                 )}
             </div>
 
+            {/* Pending Invites Section */}
+            {
+                pendingInvites.length > 0 && (
+                    <div className="mb-6 animate-in slide-in-from-top-4 duration-500">
+                        <h2 className="text-xl font-mono font-bold text-cyan-400 mb-4 flex items-center gap-2">
+                            <Mail className="w-5 h-5" />
+                            INCOMING_TRANSMISSIONS
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {pendingInvites.map((invite) => (
+                                <Card key={invite.id} className="bg-slate-900/50 border-cyan-500/30">
+                                    <CardContent className="p-4 flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-full bg-slate-800 border border-cyan-500/30 flex items-center justify-center overflow-hidden">
+                                                {invite.inviter?.avatar_url ? (
+                                                    <img src={invite.inviter.avatar_url} alt={invite.inviter.username} className="h-full w-full object-cover" />
+                                                ) : (
+                                                    <Users className="w-5 h-5 text-cyan-400" />
+                                                )}
+                                            </div>
+                                            <div>
+                                                <p className="font-mono text-sm text-slate-200">
+                                                    <span className="text-cyan-400 font-bold">{invite.inviter.username}</span> invited you to join
+                                                </p>
+                                                <p className="font-mono font-bold text-white text-lg">
+                                                    {invite.squad.name}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                size="sm"
+                                                onClick={() => handleAcceptInvite(invite.id)}
+                                                className="bg-green-600 hover:bg-green-500 text-white font-mono gap-1"
+                                            >
+                                                <Check className="w-4 h-4" />
+                                                ACCEPT
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => handleRejectInvite(invite.id)}
+                                                className="text-slate-400 hover:text-red-400 hover:bg-red-950/30"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </div>
+                    </div>
+                )
+            }
+
             {/* Search */}
             <div className="relative max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -245,6 +417,6 @@ export default function SquadsPage() {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     )
 }

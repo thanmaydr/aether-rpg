@@ -18,6 +18,7 @@ interface LeaderboardEntry {
 export default function LeaderboardPage() {
     const [leaders, setLeaders] = useState<LeaderboardEntry[]>([])
     const [loading, setLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
         const fetchLeaderboard = async () => {
@@ -25,9 +26,11 @@ export default function LeaderboardPage() {
             try {
                 const { data, error } = await supabase.rpc('get_leaderboard')
                 if (error) throw error
-                setLeaders(data)
-            } catch (error) {
+                console.log('Leaderboard data:', data) // Debug log
+                setLeaders(data || [])
+            } catch (error: any) {
                 console.error('Error fetching leaderboard:', error)
+                setError(error.message || 'Failed to fetch leaderboard')
             } finally {
                 setLoading(false)
             }
@@ -40,6 +43,18 @@ export default function LeaderboardPage() {
         return (
             <div className="h-full flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
+            </div>
+        )
+    }
+
+    if (error) {
+        return (
+            <div className="h-full flex items-center justify-center p-8 text-center bg-red-950/20">
+                <div className="space-y-2">
+                    <h2 className="text-xl font-bold text-red-500 font-mono">SYSTEM_ERROR</h2>
+                    <p className="text-slate-400 font-mono text-sm max-w-md">{error}</p>
+                    <p className="text-slate-500 text-xs mt-4">Check database migration for 'get_leaderboard' RPC.</p>
+                </div>
             </div>
         )
     }

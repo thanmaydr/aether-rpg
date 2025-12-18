@@ -3,7 +3,8 @@ import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
@@ -23,7 +24,8 @@ import {
     BookOpen,
     AlertTriangle,
     Globe,
-    Lock
+    Lock,
+    Search
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Spinner } from '@/components/ui/Spinner'
@@ -62,6 +64,12 @@ export default function ProfilePage() {
     const [newUsername, setNewUsername] = useState('')
     const fileInputRef = useRef<HTMLInputElement>(null)
     const [uploading, setUploading] = useState(false)
+
+    // Search State
+    const [searchTerm, setSearchTerm] = useState('')
+    const [searchResults, setSearchResults] = useState<ProfileData[]>([])
+    const [isSearching, setIsSearching] = useState(false)
+    const [selectedOperative, setSelectedOperative] = useState<ProfileData | null>(null)
 
     // Mock XP Data for Chart (since we don't have historical XP logs yet)
     const xpData = [
@@ -219,8 +227,32 @@ export default function ProfilePage() {
         } catch (error) {
             console.error('Error uploading avatar:', error)
             toast.error('Failed to upload avatar. Ensure "avatars" bucket exists.')
+        }
+    }
+
+    const handleSearchOperatives = async (term: string) => {
+        setSearchTerm(term)
+        if (!term.trim() || term.length < 2) {
+            setSearchResults([])
+            return
+        }
+
+        setIsSearching(true)
+        try {
+            const { data, error } = await supabase!
+                .from('profiles')
+                .select('*')
+                .ilike('username', `%${term}%`)
+                .eq('is_public', true)
+                .neq('id', user!.id)
+                .limit(10)
+
+            if (error) throw error
+            setSearchResults(data || [])
+        } catch (error) {
+            console.error('Error searching operatives:', error)
         } finally {
-            setUploading(false)
+            setIsSearching(false)
         }
     }
 
@@ -405,12 +437,15 @@ export default function ProfilePage() {
 
                     {/* Tabs: Achievements & Settings */}
                     <Tabs defaultValue="achievements" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 bg-slate-900/50 border border-slate-800">
+                        <TabsList className="grid w-full grid-cols-3 bg-slate-900/50 border border-slate-800">
                             <TabsTrigger value="achievements" className="data-[state=active]:bg-cyan-950/30 data-[state=active]:text-cyan-400 font-mono">
                                 ACHIEVEMENTS
                             </TabsTrigger>
                             <TabsTrigger value="settings" className="data-[state=active]:bg-purple-950/30 data-[state=active]:text-purple-400 font-mono">
                                 SETTINGS
+                            </TabsTrigger>
+                            <TabsTrigger value="operatives" className="data-[state=active]:bg-green-950/30 data-[state=active]:text-green-400 font-mono">
+                                OPERATIVES
                             </TabsTrigger>
                         </TabsList>
 
@@ -522,7 +557,121 @@ export default function ProfilePage() {
                                 </CardContent>
                             </Card>
                         </TabsContent>
+
+                        <TabsContent value="operatives" className="mt-4 space-y-4">
+                            <Card className="glass border-slate-700/50">
+                                <CardHeader>
+                                    <CardTitle className="text-lg font-mono text-slate-300 flex items-center gap-2">
+                                        <Search className="w-5 h-5 text-green-400" />
+                                        FIND_OPERATIVES
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    <div className="relative">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                        <Input
+                                            placeholder="Search by username..."
+                                            value={searchTerm}
+                                            onChange={(e) => handleSearchOperatives(e.target.value)}
+                                            className="pl-10 bg-slate-900/50 border-slate-800 focus:border-green-500/50 font-mono"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {searchResults.map((operative) => (
+                                            <div
+                                                key={operative.username}
+                                                className="flex items-center justify-between p-3 rounded bg-slate-900/30 border border-slate-800 hover:border-green-500/30 transition-all cursor-pointer group"
+                                                onClick={() => setSelectedOperative(operative)}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-10 w-10 rounded-full bg-slate-800 border-2 border-slate-700 group-hover:border-green-500/50 overflow-hidden flex items-center justify-center">
+                                                        {operative.avatar_url ? (
+                                                            <img src={operative.avatar_url} alt={operative.username} className="h-full w-full object-cover" />
+                                                        ) : (
+                                                            <User className="w-5 h-5 text-slate-500" />
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <div className="font-mono font-bold text-slate-200 group-hover:text-green-400">
+                                                            {operative.username}
+                                                        </div>
+                                                        <div className="text-xs font-mono text-slate-500">
+                                                            Lvl {operative.level} • {operative.character_class}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <Button size="sm" variant="ghost" className="text-slate-500 group-hover:text-green-400">
+                                                    VIEW
+                                                </Button>
+                                            </div>
+                                        ))}
+                                        {searchTerm && searchResults.length === 0 && !isSearching && (
+                                            <div className="text-center py-6 text-slate-500 font-mono text-sm leading-relaxed">
+                                                NO_MATCHING_SIGNALS_FOUND <br />
+                                                <span className="text-xs opacity-50">Target must have 'Public Visibility' enabled.</span>
+                                            </div>
+                                        )}
+                                        {!searchTerm && (
+                                            <div className="text-center py-6 text-slate-500 font-mono text-sm">
+                                                ENTER_QUERY_TO_SCAN_NETWORK
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
                     </Tabs>
+
+                    {/* Operative Details Dialog */}
+                    <Dialog open={!!selectedOperative} onOpenChange={(open) => !open && setSelectedOperative(null)}>
+                        <DialogContent className="bg-slate-900 border-green-500/30 text-slate-100 sm:max-w-md">
+                            <DialogHeader>
+                                <DialogTitle className="font-mono text-green-400 flex items-center gap-2">
+                                    <Shield className="w-5 h-5" />
+                                    OPERATIVE_FILE: {selectedOperative?.username.toUpperCase()}
+                                </DialogTitle>
+                                <DialogDescription className="font-mono text-slate-500">
+                                    Authorized Access Only. Partial data decrypted.
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            {selectedOperative && (
+                                <div className="space-y-6 py-4">
+                                    <div className="flex justify-center">
+                                        <div className="h-24 w-24 rounded-full border-2 border-green-500/30 p-1">
+                                            <div className="h-full w-full rounded-full bg-slate-800 overflow-hidden flex items-center justify-center">
+                                                {selectedOperative.avatar_url ? (
+                                                    <img src={selectedOperative.avatar_url} alt={selectedOperative.username} className="h-full w-full object-cover" />
+                                                ) : (
+                                                    <User className="w-10 h-10 text-green-500/50" />
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="p-3 bg-black/30 rounded border border-slate-800">
+                                            <div className="text-xs text-slate-500 font-mono mb-1">CLASS</div>
+                                            <div className="font-mono text-white font-bold">{selectedOperative.character_class}</div>
+                                        </div>
+                                        <div className="p-3 bg-black/30 rounded border border-slate-800">
+                                            <div className="text-xs text-slate-500 font-mono mb-1">LEVEL</div>
+                                            <div className="font-mono text-green-400 font-bold text-xl">{selectedOperative.level}</div>
+                                        </div>
+                                        <div className="p-3 bg-black/30 rounded border border-slate-800 col-span-2">
+                                            <div className="text-xs text-slate-500 font-mono mb-1">TOTAL_XP</div>
+                                            <div className="font-mono text-purple-400 font-bold">{selectedOperative.xp_total.toLocaleString()} XP</div>
+                                        </div>
+                                    </div>
+
+                                    <div className="text-center text-xs font-mono text-slate-600 mt-4">
+                                        * Full dossier restricted by NetWatch Protocol *
+                                    </div>
+                                </div>
+                            )}
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
         </div>
