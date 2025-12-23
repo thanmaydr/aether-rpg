@@ -8,8 +8,10 @@ import { Spinner } from '@/components/ui/Spinner'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { toast } from 'sonner'
 
-// Lazy load the ForceGraphCanvas component
+// Lazy load components
 const ForceGraphCanvas = lazy(() => import('@/components/NeuralMap/ForceGraphCanvas'))
+// Import direct component (lightweight) or lazy load if heavy
+const NeuralListView = lazy(() => import('@/components/NeuralMap/NeuralListView'))
 
 interface GraphNode {
     id: string
@@ -33,6 +35,7 @@ export default function NeuralMapPage() {
     const [links, setLinks] = useState<GraphLink[]>([])
     const [filterDomain, setFilterDomain] = useState<string>('All')
     const [domains, setDomains] = useState<string[]>([])
+    const [viewMode, setViewMode] = useState<'map' | 'list'>('map')
 
     const fetchData = useCallback(async () => {
         if (!user || !supabase) return
@@ -200,21 +203,54 @@ export default function NeuralMapPage() {
     }
 
     return (
-        <div className="relative h-[calc(100vh-5rem)] w-full bg-slate-950">
-            <Suspense fallback={
-                <div className="w-full h-full flex items-center justify-center bg-slate-950 border border-cyan-500/20 rounded-lg">
-                    <Spinner size="lg" variant="neon" />
-                </div>
-            }>
-                <ForceGraphCanvas
-                    nodes={filteredNodes}
-                    links={filteredLinks}
-                    onNodeClick={(nodeId) => console.log('Clicked:', nodeId)}
-                />
-            </Suspense>
+        <div className="relative h-[calc(100vh-5rem)] w-full bg-slate-950 flex flex-col">
+            {/* View Toggle Header */}
+            <div className="absolute top-4 left-4 z-20 flex gap-2">
+                <Card className="bg-slate-900/80 backdrop-blur border-cyan-500/30 p-1 flex gap-1">
+                    <Button
+                        variant={viewMode === 'map' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('map')}
+                        className={`text-xs font-mono gap-2 ${viewMode === 'map' ? 'bg-cyan-600 hover:bg-cyan-500' : 'text-slate-400 hover:text-cyan-400'}`}
+                    >
+                        <RefreshCw className="w-3 h-3" /> {/* Reusing Icon for generic map node, ideally replace with Network/Share2 */}
+                        MAP_VIEW
+                    </Button>
+                    <Button
+                        variant={viewMode === 'list' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('list')}
+                        className={`text-xs font-mono gap-2 ${viewMode === 'list' ? 'bg-cyan-600 hover:bg-cyan-500' : 'text-slate-400 hover:text-cyan-400'}`}
+                    >
+                        <Filter className="w-3 h-3" /> {/* Reusing Icon for list, ideally replace with List/LayoutList */}
+                        LIST_VIEW
+                    </Button>
+                </Card>
+            </div>
 
-            {/* Overlay UI */}
-            <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 pointer-events-none">
+            <div className="flex-1 w-full h-full relative overflow-hidden">
+                <Suspense fallback={
+                    <div className="w-full h-full flex items-center justify-center bg-slate-950 border border-cyan-500/20 rounded-lg">
+                        <Spinner size="lg" variant="neon" />
+                    </div>
+                }>
+                    {viewMode === 'map' ? (
+                        <ForceGraphCanvas
+                            nodes={filteredNodes}
+                            links={filteredLinks}
+                            onNodeClick={(nodeId) => console.log('Clicked:', nodeId)}
+                        />
+                    ) : (
+                        <NeuralListView
+                            nodes={filteredNodes}
+                            onNodeClick={(node) => console.log('Clicked:', node.id)}
+                        />
+                    )}
+                </Suspense>
+            </div>
+
+            {/* Overlay UI (Visible in both modes) */}
+            <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 pointer-events-none animate-in fade-in slide-in-from-right-4 duration-500">
                 <Card className="w-64 bg-slate-900/80 backdrop-blur border-cyan-500/30 pointer-events-auto">
                     <CardContent className="p-4 space-y-4">
                         <div className="flex items-center justify-between">

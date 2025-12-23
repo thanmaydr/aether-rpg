@@ -440,13 +440,13 @@ export default function ProfilePage() {
                     {/* Tabs: Achievements & Settings */}
                     <Tabs defaultValue="achievements" className="w-full">
                         <TabsList className="grid w-full grid-cols-3 bg-slate-900/50 border border-slate-800">
-                            <TabsTrigger value="achievements" className="data-[state=active]:bg-cyan-950/30 data-[state=active]:text-cyan-400 font-mono">
+                            <TabsTrigger value="achievements" className="text-slate-400 data-[state=active]:bg-cyan-950/30 data-[state=active]:text-cyan-400 font-mono hover:text-cyan-200 transition-colors">
                                 {t('profile.tabs.achievements')}
                             </TabsTrigger>
-                            <TabsTrigger value="settings" className="data-[state=active]:bg-purple-950/30 data-[state=active]:text-purple-400 font-mono">
+                            <TabsTrigger value="settings" className="text-slate-400 data-[state=active]:bg-purple-950/30 data-[state=active]:text-purple-400 font-mono hover:text-purple-200 transition-colors">
                                 {t('profile.tabs.settings')}
                             </TabsTrigger>
-                            <TabsTrigger value="operatives" className="data-[state=active]:bg-green-950/30 data-[state=active]:text-green-400 font-mono">
+                            <TabsTrigger value="operatives" className="text-slate-400 data-[state=active]:bg-green-950/30 data-[state=active]:text-green-400 font-mono hover:text-green-200 transition-colors">
                                 {t('profile.tabs.operatives')}
                             </TabsTrigger>
                         </TabsList>
@@ -490,7 +490,7 @@ export default function ProfilePage() {
                                             </div>
                                             <div>
                                                 <div className="font-bold text-slate-200 font-mono">{t('settings.language')}</div>
-                                                <div className="text-xs text-slate-500 font-mono">{t('settings.language.desc')}</div>
+                                                <div className="text-xs text-slate-400 font-mono">{t('settings.language.desc')}</div>
                                             </div>
                                         </div>
                                         <div className="flex gap-2">
@@ -520,7 +520,7 @@ export default function ProfilePage() {
                                             </div>
                                             <div>
                                                 <div className="font-bold text-slate-200 font-mono">PROFILE_VISIBILITY</div>
-                                                <div className="text-xs text-slate-500 font-mono">
+                                                <div className="text-xs text-slate-400 font-mono">
                                                     {profile?.is_public ? 'Visible on Global Leaderboard' : 'Hidden from public view'}
                                                 </div>
                                             </div>
@@ -542,7 +542,7 @@ export default function ProfilePage() {
                                             </div>
                                             <div>
                                                 <div className="font-bold text-slate-200 font-mono">THEME_MODE</div>
-                                                <div className="text-xs text-slate-500 font-mono">Toggle between Focus and Overdrive</div>
+                                                <div className="text-xs text-slate-400 font-mono">Toggle between Focus and Overdrive</div>
                                             </div>
                                         </div>
                                         <Button variant="outline" size="sm" className="border-slate-700 text-slate-400">
@@ -557,7 +557,7 @@ export default function ProfilePage() {
                                             </div>
                                             <div>
                                                 <div className="font-bold text-slate-200 font-mono">NOTIFICATIONS</div>
-                                                <div className="text-xs text-slate-500 font-mono">Manage system alerts</div>
+                                                <div className="text-xs text-slate-400 font-mono">Manage system alerts</div>
                                             </div>
                                         </div>
                                         <Button variant="outline" size="sm" className="border-slate-700 text-slate-400">
@@ -602,12 +602,12 @@ export default function ProfilePage() {
                                 </CardHeader>
                                 <CardContent className="space-y-6">
                                     <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                                         <Input
                                             placeholder="Search by username..."
                                             value={searchTerm}
                                             onChange={(e) => handleSearchOperatives(e.target.value)}
-                                            className="pl-10 bg-slate-900/50 border-slate-800 focus:border-green-500/50 font-mono"
+                                            className="pl-10 bg-slate-900/50 border-slate-700 focus:border-green-500/50 font-mono text-white placeholder:text-slate-500"
                                         />
                                     </div>
 
@@ -630,7 +630,7 @@ export default function ProfilePage() {
                                                         <div className="font-mono font-bold text-slate-200 group-hover:text-green-400">
                                                             {operative.username}
                                                         </div>
-                                                        <div className="text-xs font-mono text-slate-500">
+                                                        <div className="text-xs font-mono text-slate-400">
                                                             Lvl {operative.level} • {operative.character_class}
                                                         </div>
                                                     </div>
@@ -641,13 +641,13 @@ export default function ProfilePage() {
                                             </div>
                                         ))}
                                         {searchTerm && searchResults.length === 0 && !isSearching && (
-                                            <div className="text-center py-6 text-slate-500 font-mono text-sm leading-relaxed">
+                                            <div className="text-center py-6 text-slate-400 font-mono text-sm leading-relaxed">
                                                 NO_MATCHING_SIGNALS_FOUND <br />
-                                                <span className="text-xs opacity-50">Target must have 'Public Visibility' enabled.</span>
+                                                <span className="text-xs opacity-70">Target must have 'Public Visibility' enabled.</span>
                                             </div>
                                         )}
                                         {!searchTerm && (
-                                            <div className="text-center py-6 text-slate-500 font-mono text-sm">
+                                            <div className="text-center py-6 text-slate-400 font-mono text-sm">
                                                 ENTER_QUERY_TO_SCAN_NETWORK
                                             </div>
                                         )}

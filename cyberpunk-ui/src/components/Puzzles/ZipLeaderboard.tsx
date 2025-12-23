@@ -62,10 +62,10 @@ export default function ZipLeaderboard() {
             <CardContent>
                 <Tabs defaultValue="personal" className="w-full">
                     <TabsList className="grid w-full grid-cols-2 bg-slate-950/50">
-                        <TabsTrigger value="personal" className="data-[state=active]:bg-cyan-950/40 data-[state=active]:text-cyan-400">
+                        <TabsTrigger value="personal" className="text-slate-400 data-[state=active]:bg-cyan-950/40 data-[state=active]:text-cyan-400 hover:text-cyan-200 transition-colors">
                             <User className="w-4 h-4 mr-2" /> My Best
                         </TabsTrigger>
-                        <TabsTrigger value="global" className="data-[state=active]:bg-purple-950/40 data-[state=active]:text-purple-400">
+                        <TabsTrigger value="global" className="text-slate-400 data-[state=active]:bg-purple-950/40 data-[state=active]:text-purple-400 hover:text-purple-200 transition-colors">
                             <Globe className="w-4 h-4 mr-2" /> Global
                         </TabsTrigger>
                     </TabsList>
@@ -93,8 +93,8 @@ export default function ZipLeaderboard() {
                                         <div key={idx} className="flex items-center justify-between p-2 rounded bg-slate-950/30 border border-slate-800/50 text-sm">
                                             <div className="flex items-center gap-3">
                                                 <span className={`font-mono font-bold ${idx === 0 ? 'text-yellow-400' :
-                                                        idx === 1 ? 'text-slate-300' :
-                                                            'text-amber-700'
+                                                    idx === 1 ? 'text-slate-300' :
+                                                        'text-amber-700'
                                                     }`}>#{idx + 1}</span>
                                                 <span className="text-slate-300">{score.username}</span>
                                             </div>

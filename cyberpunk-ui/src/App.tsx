@@ -56,7 +56,7 @@ function App() {
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </Suspense>
-          <Toaster />
+          <Toaster theme="dark" />
         </AuthProvider>
       </Router>
     </ErrorBoundary>

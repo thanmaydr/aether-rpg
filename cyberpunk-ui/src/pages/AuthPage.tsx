@@ -22,7 +22,7 @@ export default function AuthPage() {
                     <Button
                         variant="ghost"
                         onClick={() => setIsLogin(!isLogin)}
-                        className="text-muted-foreground hover:text-primary font-mono text-xs"
+                        className="text-white hover:text-primary font-mono text-xs tracking-wider"
                     >
                         {isLogin ? "NO_IDENTITY? REGISTER_NEW_USER >" : "HAS_IDENTITY? ACCESS_LOGIN >"}
                     </Button>

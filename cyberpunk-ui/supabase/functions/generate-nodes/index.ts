@@ -12,6 +12,10 @@ serve(async (req) => {
 
     try {
         const { text, domain, ping } = await req.json()
+
+        if (!text && !ping) {
+            throw new Error('Text input is required')
+        }
         const GROQ_API_KEY = Deno.env.get('GROQ_API_KEY')
 
         if (ping) {
@@ -61,7 +65,11 @@ serve(async (req) => {
             throw new Error(data.error?.message || 'Failed to generate nodes')
         }
 
-        const generatedContent = JSON.parse(data.choices[0].message.content)
+        let content = data.choices[0].message.content
+        // Sanitize response: remove markdown code blocks if present
+        content = content.replace(/```json/g, '').replace(/```/g, '').trim()
+
+        const generatedContent = JSON.parse(content)
 
         return new Response(
             JSON.stringify(generatedContent),

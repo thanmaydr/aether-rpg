@@ -101,8 +101,10 @@ export default function SudokuGame() {
                                 size="sm"
                                 onClick={() => setDifficulty(d)}
                                 className={cn(
-                                    "font-mono text-xs",
-                                    difficulty === d && "bg-cyan-600 hover:bg-cyan-500"
+                                    "font-mono text-xs transition-all duration-200",
+                                    difficulty === d
+                                        ? "bg-cyan-600 hover:bg-cyan-500 text-white border-transparent"
+                                        : "text-slate-400 border-slate-700 bg-slate-900/50 hover:text-cyan-400 hover:border-cyan-500 hover:bg-slate-800"
                                 )}
                             >
                                 {d}

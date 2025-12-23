@@ -360,12 +360,12 @@ export default function SquadsPage() {
 
             {/* Search */}
             <div className="relative max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
                     placeholder="Search squads..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-slate-900/50 border-slate-800 focus:border-cyan-500/50 font-mono"
+                    className="pl-10 bg-slate-900/50 border-slate-700 focus:border-cyan-500/50 font-mono text-white placeholder:text-slate-500"
                 />
             </div>
 
@@ -381,7 +381,7 @@ export default function SquadsPage() {
                                     <span>{squad.squad_xp} XP</span>
                                 </div>
                             </CardTitle>
-                            <CardDescription className="font-mono text-xs text-slate-500 line-clamp-2">
+                            <CardDescription className="font-mono text-xs text-slate-400 line-clamp-2">
                                 {squad.description || "No description provided."}
                             </CardDescription>
                         </CardHeader>

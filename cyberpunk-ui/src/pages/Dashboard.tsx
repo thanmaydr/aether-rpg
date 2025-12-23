@@ -118,24 +118,66 @@ export default function Dashboard() {
         fetchDashboardData()
     }, [user?.id, checkStreak])
 
+    const colorVariants: Record<string, {
+        cardInfo: string;
+        label: string;
+        iconWrapper: string;
+        icon: string;
+    }> = {
+        cyan: {
+            cardInfo: "border-cyan-500/30 shadow-cyan-500/10 hover:shadow-cyan-500/20",
+            label: "text-cyan-400",
+            iconWrapper: "bg-cyan-500/10 border-cyan-500/20",
+            icon: "text-cyan-400"
+        },
+        magenta: {
+            cardInfo: "border-magenta-500/30 shadow-magenta-500/10 hover:shadow-magenta-500/20",
+            label: "text-magenta-400",
+            iconWrapper: "bg-magenta-500/10 border-magenta-500/20",
+            icon: "text-magenta-400"
+        },
+        amber: {
+            cardInfo: "border-amber-500/30 shadow-amber-500/10 hover:shadow-amber-500/20",
+            label: "text-amber-400",
+            iconWrapper: "bg-amber-500/10 border-amber-500/20",
+            icon: "text-amber-400"
+        },
+        purple: {
+            cardInfo: "border-purple-500/30 shadow-purple-500/10 hover:shadow-purple-500/20",
+            label: "text-purple-400",
+            iconWrapper: "bg-purple-500/10 border-purple-500/20",
+            icon: "text-purple-400"
+        },
+        orange: {
+            cardInfo: "border-orange-500/30 shadow-orange-500/10 hover:shadow-orange-500/20",
+            label: "text-orange-400",
+            iconWrapper: "bg-orange-500/10 border-orange-500/20",
+            icon: "text-orange-400"
+        }
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const StatCard = ({ icon: Icon, label, value, color }: any) => (
-        <Card className={`glass border-${color}-500/30 shadow-lg shadow-${color}-500/10 hover:shadow-${color}-500/20 transition-all duration-300`}>
-            <CardContent className="p-6 flex items-center justify-between">
-                <div>
-                    <p className={`text-sm font-mono text-${color}-200/70 mb-1`}>{label}</p>
-                    {loading ? (
-                        <Skeleton className="h-8 w-16" />
-                    ) : (
-                        <p className="text-3xl font-bold font-mono text-white">{value}</p>
-                    )}
-                </div>
-                <div className={`p-3 rounded-full bg-${color}-500/10 border border-${color}-500/20`}>
-                    <Icon className={`w-6 h-6 text-${color}-400`} />
-                </div>
-            </CardContent>
-        </Card>
-    )
+    const StatCard = ({ icon: Icon, label, value, color }: any) => {
+        const styles = colorVariants[color] || colorVariants['cyan']
+
+        return (
+            <Card className={`glass shadow-lg transition-all duration-300 ${styles.cardInfo}`}>
+                <CardContent className="p-6 flex items-center justify-between">
+                    <div>
+                        <p className={`text-sm font-mono mb-1 uppercase tracking-wider ${styles.label}`}>{label}</p>
+                        {loading ? (
+                            <Skeleton className="h-8 w-16" />
+                        ) : (
+                            <p className="text-3xl font-bold font-mono text-white">{value}</p>
+                        )}
+                    </div>
+                    <div className={`p-3 rounded-full border ${styles.iconWrapper}`}>
+                        <Icon className={`w-6 h-6 ${styles.icon}`} />
+                    </div>
+                </CardContent>
+            </Card>
+        )
+    }
 
     return (
         <div className="space-y-8 pb-8">
@@ -152,7 +194,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard icon={Network} label="NODES_RESTORED" value={stats.nodesRestored} color="cyan" />
                 <StatCard icon={Shield} label="MASTERY_LEVEL" value={stats.level} color="magenta" />
-                <StatCard icon={Flame} label="DAILY_STREAK" value={stats.streak} color="orange" />
+                <StatCard icon={Flame} label="DAILY_STREAK" value={stats.streak} color="amber" />
                 <StatCard icon={Zap} label="TOTAL_XP" value={stats.xpTotal} color="purple" />
             </div>
 
@@ -230,7 +272,7 @@ export default function Dashboard() {
                                 </div>
                                 <div className="text-left">
                                     <div className="font-mono font-bold text-cyan-100">EXPLORE_NEXUS</div>
-                                    <div className="text-xs text-cyan-300/50 font-mono">View Knowledge Graph</div>
+                                    <div className="text-xs text-cyan-300 font-mono">View Knowledge Graph</div>
                                 </div>
                             </div>
                             <ChevronRight className="w-5 h-5 text-cyan-500/50 group-hover:text-cyan-400 transition-colors" />
@@ -246,7 +288,7 @@ export default function Dashboard() {
                                 </div>
                                 <div className="text-left">
                                     <div className="font-mono font-bold text-magenta-100">ACTIVE_QUESTS</div>
-                                    <div className="text-xs text-magenta-300/50 font-mono">Continue Challenges</div>
+                                    <div className="text-xs text-magenta-300 font-mono">Continue Challenges</div>
                                 </div>
                             </div>
                             <ChevronRight className="w-5 h-5 text-magenta-500/50 group-hover:text-magenta-400 transition-colors" />
@@ -262,7 +304,7 @@ export default function Dashboard() {
                                 </div>
                                 <div className="text-left">
                                     <div className="font-mono font-bold text-purple-100">ARCHIVES</div>
-                                    <div className="text-xs text-purple-300/50 font-mono">Review Knowledge</div>
+                                    <div className="text-xs text-purple-300 font-mono">Review Knowledge</div>
                                 </div>
                             </div>
                             <ChevronRight className="w-5 h-5 text-purple-500/50 group-hover:text-purple-400 transition-colors" />
