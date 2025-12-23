@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/hooks/useAuth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Trophy, Medal, User } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -16,6 +17,7 @@ interface LeaderboardEntry {
 }
 
 export default function LeaderboardPage() {
+    const { user } = useAuth()
     const [leaders, setLeaders] = useState<LeaderboardEntry[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -26,8 +28,33 @@ export default function LeaderboardPage() {
             try {
                 const { data, error } = await supabase.rpc('get_leaderboard')
                 if (error) throw error
-                console.log('Leaderboard data:', data) // Debug log
-                setLeaders(data || [])
+
+                // Filter out known seed data
+                const seedNames = ["NeonRunner", "VoidWalker", "ByteSmasher"]
+                let validLeaders = (data || []).filter((l: LeaderboardEntry) => !seedNames.includes(l.username))
+
+                // Fallback: If no real data, show current user
+                if (validLeaders.length === 0 && user) {
+                    const { data: profile, error: profileError } = await supabase
+                        .from('profiles')
+                        .select('username, xp_total, level, character_class, avatar_url, is_public')
+                        .eq('id', user.id)
+                        .single()
+
+                    if (!profileError && profile) {
+                        validLeaders = [{
+                            id: user.id,
+                            username: profile.username || 'Current User',
+                            xp_total: profile.xp_total || 0,
+                            level: profile.level || 1,
+                            character_class: profile.character_class || 'Novice',
+                            avatar_url: profile.avatar_url,
+                            is_public: true // Always show self
+                        }]
+                    }
+                }
+
+                setLeaders(validLeaders)
             } catch (error: any) {
                 console.error('Error fetching leaderboard:', error)
                 setError(error.message || 'Failed to fetch leaderboard')
@@ -37,7 +64,7 @@ export default function LeaderboardPage() {
         }
 
         fetchLeaderboard()
-    }, [])
+    }, [user])
 
     if (loading) {
         return (

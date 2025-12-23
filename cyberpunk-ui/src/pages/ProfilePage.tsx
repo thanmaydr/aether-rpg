@@ -1,9 +1,10 @@
 import { useEffect, useState, useRef, lazy, Suspense } from 'react'
 import { useAuth } from '@/hooks/useAuth'
+import { useLanguage } from '@/components/Auth/LanguageContext'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -52,6 +53,7 @@ interface UserStats {
 
 export default function ProfilePage() {
     const { user, signOut } = useAuth()
+    const { t, language, setLanguage } = useLanguage()
     const [loading, setLoading] = useState(true)
     const [profile, setProfile] = useState<ProfileData | null>(null)
     const [stats, setStats] = useState<UserStats>({
@@ -300,7 +302,7 @@ export default function ProfilePage() {
     return (
         <div className="space-y-8 pb-8">
             <h1 className="text-3xl md:text-4xl font-bold font-mono text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
-                OPERATIVE_PROFILE
+                {t('profile.title')}
             </h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -439,13 +441,13 @@ export default function ProfilePage() {
                     <Tabs defaultValue="achievements" className="w-full">
                         <TabsList className="grid w-full grid-cols-3 bg-slate-900/50 border border-slate-800">
                             <TabsTrigger value="achievements" className="data-[state=active]:bg-cyan-950/30 data-[state=active]:text-cyan-400 font-mono">
-                                ACHIEVEMENTS
+                                {t('profile.tabs.achievements')}
                             </TabsTrigger>
                             <TabsTrigger value="settings" className="data-[state=active]:bg-purple-950/30 data-[state=active]:text-purple-400 font-mono">
-                                SETTINGS
+                                {t('profile.tabs.settings')}
                             </TabsTrigger>
                             <TabsTrigger value="operatives" className="data-[state=active]:bg-green-950/30 data-[state=active]:text-green-400 font-mono">
-                                OPERATIVES
+                                {t('profile.tabs.operatives')}
                             </TabsTrigger>
                         </TabsList>
 
@@ -479,6 +481,38 @@ export default function ProfilePage() {
                         <TabsContent value="settings" className="mt-4 space-y-4">
                             <Card className="glass border-slate-700/50">
                                 <CardContent className="p-6 space-y-6">
+
+                                    {/* Language Settings */}
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 rounded bg-yellow-500/10 text-yellow-400">
+                                                <Globe className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-slate-200 font-mono">{t('settings.language')}</div>
+                                                <div className="text-xs text-slate-500 font-mono">{t('settings.language.desc')}</div>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className={`border-slate-700 ${language === 'en' ? 'text-yellow-400 border-yellow-900/50 bg-yellow-950/20' : 'text-slate-400'}`}
+                                                onClick={() => setLanguage('en')}
+                                            >
+                                                EN
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className={`border-slate-700 ${language === 'hi' ? 'text-yellow-400 border-yellow-900/50 bg-yellow-950/20' : 'text-slate-400'}`}
+                                                onClick={() => setLanguage('hi')}
+                                            >
+                                                HI
+                                            </Button>
+                                        </div>
+                                    </div>
+
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <div className={`p-2 rounded ${profile?.is_public ? 'bg-green-500/10 text-green-400' : 'bg-slate-800 text-slate-400'}`}>

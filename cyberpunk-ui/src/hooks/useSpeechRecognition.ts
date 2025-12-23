@@ -1,23 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
-interface SpeechRecognition extends EventTarget {
-    continuous: boolean
-    interimResults: boolean
-    lang: string
-    start: () => void
-    stop: () => void
-    abort: () => void
-    onresult: (event: any) => void
-    onerror: (event: any) => void
-    onend: () => void
-}
-
-declare global {
-    interface Window {
-        SpeechRecognition: any
-        webkitSpeechRecognition: any
-    }
-}
+const GROQ_API_KEY = import.meta.env.VITE_GROQ_API_KEY;
 
 interface UseSpeechRecognitionReturn {
     isListening: boolean
@@ -31,74 +14,103 @@ interface UseSpeechRecognitionReturn {
 export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
     const [isListening, setIsListening] = useState(false)
     const [transcript, setTranscript] = useState('')
-    const [recognition, setRecognition] = useState<SpeechRecognition | null>(null)
+    const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
+    const chunksRef = useRef<BlobPart[]>([])
 
+    // Cleanup on unmount
     useEffect(() => {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-        if (SpeechRecognition) {
-            const recognitionInstance = new SpeechRecognition()
-            recognitionInstance.continuous = true
-            recognitionInstance.interimResults = true
-            recognitionInstance.lang = 'en-US'
-            setRecognition(recognitionInstance)
+        return () => {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop()
+            }
+        }
+    }, [mediaRecorder])
+
+    const transcribeAudio = async (audioBlob: Blob) => {
+        if (!GROQ_API_KEY) {
+            console.error("No Groq API key found. Check VITE_GROQ_API_KEY.")
+            return
+        }
+
+        const formData = new FormData()
+        // Groq requires a filename with extension
+        formData.append('file', audioBlob, 'recording.webm')
+        formData.append('model', 'whisper-large-v3')
+        // We don't specify language so it auto-detects (useful for Hindi/English)
+
+        try {
+            const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${GROQ_API_KEY}`,
+                },
+                body: formData
+            })
+
+            if (!response.ok) {
+                const errorText = await response.text()
+                console.error("Groq STT Error:", errorText)
+                throw new Error(`STT Failed: ${response.statusText}`)
+            }
+
+            const data = await response.json()
+            if (data.text) {
+                setTranscript(data.text)
+            }
+        } catch (err) {
+            console.error("Transcription error:", err)
+        }
+    }
+
+    const startListening = useCallback(async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            console.error("Media Devices API not supported.")
+            return
+        }
+
+        try {
+            // Request microphone access
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+            const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' })
+
+            recorder.ondataavailable = (e) => {
+                if (e.data.size > 0) {
+                    chunksRef.current.push(e.data)
+                }
+            }
+
+            recorder.onstop = async () => {
+                const blob = new Blob(chunksRef.current, { type: 'audio/webm' })
+                chunksRef.current = [] // reset chunks
+
+                // Stop all tracks to release microphone
+                stream.getTracks().forEach(track => track.stop())
+
+                // Process audio
+                if (blob.size > 0) {
+                    await transcribeAudio(blob)
+                }
+                setIsListening(false)
+            }
+
+            chunksRef.current = []
+            recorder.start()
+            setMediaRecorder(recorder)
+            setIsListening(true)
+            setTranscript('') // Clear previous transcript on new recording
+
+        } catch (err) {
+            console.error("Error accessing microphone:", err)
+            setIsListening(false)
         }
     }, [])
 
-    useEffect(() => {
-        if (!recognition) return
-
-        recognition.onresult = (event: any) => {
-            let finalTranscript = ''
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript
-                } else {
-                    // Optional: Handle interim results if needed
-                    // finalTranscript += event.results[i][0].transcript
-                }
-            }
-            // Append to existing transcript or just set it? 
-            // For this use case, we probably want to append if continuous, 
-            // but let's just grab the latest final result for simplicity in this snippet
-            // actually, standard behavior is to accumulate.
-
-            // Let's simplify: just get the latest text. 
-            // The event.results contains all results for the session.
-            const currentTranscript = Array.from(event.results)
-                .map((result: any) => result[0].transcript)
-                .join('')
-
-            setTranscript(currentTranscript)
-        }
-
-        recognition.onerror = (event: any) => {
-            console.error('Speech recognition error', event.error)
-            setIsListening(false)
-        }
-
-        recognition.onend = () => {
-            setIsListening(false)
-        }
-
-    }, [recognition])
-
-    const startListening = useCallback(() => {
-        if (recognition && !isListening) {
-            try {
-                recognition.start()
-                setIsListening(true)
-            } catch (error) {
-                console.error("Failed to start recognition:", error)
-            }
-        }
-    }, [recognition, isListening])
-
     const stopListening = useCallback(() => {
-        if (recognition && isListening) {
-            recognition.stop()
-            setIsListening(false)
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop()
+            // State update to false happens in onstop
         }
-    }, [recognition, isListening])
+    }, [mediaRecorder])
 
     const resetTranscript = useCallback(() => {
         setTranscript('')
@@ -110,6 +122,6 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
         startListening,
         stopListening,
         resetTranscript,
-        hasRecognitionSupport: !!recognition
+        hasRecognitionSupport: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)
     }
 }

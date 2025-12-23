@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { useXP } from '@/hooks/useXP'
+import { useLanguage } from '@/components/Auth/LanguageContext'
+import { translateText } from '@/lib/translationService'
 import LevelUpModal from '@/components/Animations/LevelUpModal'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -35,6 +37,7 @@ export default function QuestBattlePage() {
     const { questId } = useParams()
     const { user } = useAuth()
     const { addXP } = useXP()
+    const { language, t } = useLanguage()
     const [quest, setQuest] = useState<QuestData | null>(null)
     const [loading, setLoading] = useState(true)
     const [messages, setMessages] = useState<Message[]>([])
@@ -115,10 +118,15 @@ export default function QuestBattlePage() {
 
                 // Initial greeting from Guardian
                 if (!hasGreeting.current) {
+                    let greeting = questData.scenario_prompt || "Guardian initialized. Explain the concept to proceed."
+                    if (language !== 'en') {
+                        greeting = await translateText(greeting, language)
+                    }
+
                     setMessages([
                         {
                             role: 'assistant',
-                            content: questData.scenario_prompt || "Guardian initialized. Explain the concept to proceed."
+                            content: greeting
                         }
                     ])
                     hasGreeting.current = true
@@ -133,7 +141,7 @@ export default function QuestBattlePage() {
         }
 
         fetchQuestData()
-    }, [questId, user])
+    }, [questId, user, language]) // Added language dependency to re-fetch/translate if needed (though greeting is once)
 
     // Auto-scroll to bottom
     useEffect(() => {
@@ -152,11 +160,17 @@ export default function QuestBattlePage() {
         setIsThinking(true)
 
         try {
+            // Translate input to English if needed for the backend grader
+            let textToGrade = input
+            if (language !== 'en') {
+                textToGrade = await translateText(input, 'en')
+            }
+
             // Call Edge Function for Grading
             const { data, error } = await supabase.functions.invoke('feynman-grader', {
                 body: {
                     questId: quest.id,
-                    userExplanation: input
+                    userExplanation: textToGrade
                 }
             })
 
@@ -164,9 +178,15 @@ export default function QuestBattlePage() {
 
             const { grade, aiResponse: guardianReply, xpGained } = data
 
+            // Translate AI response back to user's language
+            let finalReply = guardianReply
+            if (language !== 'en') {
+                finalReply = await translateText(guardianReply, language)
+            }
+
             const aiMessage: Message = {
                 role: 'assistant',
-                content: guardianReply,
+                content: finalReply,
                 metrics: grade
             }
 
@@ -226,12 +246,18 @@ export default function QuestBattlePage() {
             const { data, error } = await supabase.functions.invoke('quest-hint', {
                 body: {
                     questId: quest.id,
-                    userExplanation: input
+                    userExplanation: input // Hint system might also need translation? Assuming it just gives a generic hint based on quest
                 }
             })
 
             if (error) throw error
-            setCurrentHint(data.hint)
+
+            let hintText = data.hint
+            if (language !== 'en') {
+                hintText = await translateText(hintText, language)
+            }
+
+            setCurrentHint(hintText)
             setHintsUsed(data.hintsUsed)
             toast.success('Hint received! XP reward reduced by 20%.')
         } catch (error) {
@@ -282,7 +308,7 @@ export default function QuestBattlePage() {
                 <div className="p-4 border-b border-cyan-500/20 flex justify-between items-center bg-slate-900/50 backdrop-blur">
                     <div className="flex items-center gap-2 text-cyan-400">
                         <BookOpen className="w-5 h-5" />
-                        <span className="font-mono font-bold">ARCHIVE_DATA</span>
+                        <span className="font-mono font-bold">{t('quest.archives')}</span>
                     </div>
                     <Button
                         variant="ghost"
@@ -333,7 +359,7 @@ export default function QuestBattlePage() {
             <div className="flex-1 flex flex-col min-w-0 bg-slate-950/80 h-full overflow-hidden">
                 {/* Mobile Header */}
                 <div className="md:hidden p-4 border-b border-cyan-500/20 flex items-center justify-between bg-slate-900/50 backdrop-blur">
-                    <span className="font-mono text-cyan-400 font-bold">UPLINK_ESTABLISHED</span>
+                    <span className="font-mono text-cyan-400 font-bold">{t('quest.uplink')}</span>
                     <Button
                         variant="ghost"
                         size="sm"
@@ -341,7 +367,7 @@ export default function QuestBattlePage() {
                         onClick={() => setShowStudy(true)}
                     >
                         <BookOpen className="w-4 h-4" />
-                        ARCHIVES
+                        {t('quest.archives')}
                     </Button>
                 </div>
 
@@ -444,7 +470,7 @@ export default function QuestBattlePage() {
                             <Textarea
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
-                                placeholder="Explain the concept to the Guardian..."
+                                placeholder={t('quest.input.placeholder')}
                                 className="min-h-[60px] max-h-[120px] bg-black/50 border-slate-700 focus:border-cyan-500/50 pr-12 font-mono text-sm resize-none text-slate-200"
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && !e.shiftKey) {
@@ -478,7 +504,7 @@ export default function QuestBattlePage() {
                     </div>
                     <div className="text-center mt-2">
                         <span className="text-[10px] text-slate-600 font-mono uppercase tracking-widest">
-                            Aether Link Status: {isThinking ? 'TRANSMITTING' : 'STABLE'}
+                            Aether Link Status: {isThinking ? t('quest.sending') : t('quest.stable')}
                         </span>
                     </div>
                 </div>
